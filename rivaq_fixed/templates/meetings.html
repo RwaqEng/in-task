@@ -1,0 +1,605 @@
+{% extends "base.html" %}
+
+{% block title %}الاجتماعات - نظام إدارة المهام - شركة رِواق{% endblock %}
+
+{% block extra_css %}
+<style>
+.meeting-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: white;
+}
+.meeting-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+.status-scheduled { background-color: #fff3cd; color: #856404; }
+.status-completed { background-color: #d4edda; color: #155724; }
+.status-cancelled { background-color: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-users me-2"></i>إدارة الاجتماعات</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMeetingModal">
+                    <i class="fas fa-plus me-2"></i>إضافة اجتماع جديد
+                </button>
+            </div>
+
+            <!-- إحصائيات سريعة -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5>{{ meetings|length }}</h5>
+                            <p>إجمالي الاجتماعات</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h5>{{ meetings|selectattr('status', 'equalto', 'مجدولة')|list|length }}</h5>
+                            <p>اجتماعات مجدولة</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5>{{ meetings|selectattr('status', 'equalto', 'مكتملة')|list|length }}</h5>
+                            <p>اجتماعات مكتملة</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h5>0</h5>
+                            <p>هذا الأسبوع</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قائمة الاجتماعات -->
+            <div class="card">
+                <div class="card-header">
+                    <h5>قائمة الاجتماعات</h5>
+                </div>
+                <div class="card-body">
+                    {% if meetings %}
+                        {% for meeting in meetings %}
+                        <div class="meeting-card">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5>{{ meeting[1] }}</h5>
+                                    <p class="text-muted">{{ meeting[2] or 'لا يوجد وصف' }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>{{ meeting[3] or 'غير محدد' }}
+                                        <i class="fas fa-map-marker-alt me-1 ms-3"></i>{{ meeting[4] or 'غير محدد' }}
+                                    </small>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <span class="meeting-status status-{{ meeting[10]|lower|replace('مجدولة', 'scheduled')|replace('مكتملة', 'completed')|replace('ملغية', 'cancelled') }}">
+                                        {{ meeting[10] }}
+                                    </span>
+                                    <div class="mt-2">
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editMeeting({{ meeting[0] }})" title="تعديل">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMeeting({{ meeting[0] }})" title="حذف">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success" onclick="sendMeetingSummary({{ meeting[0] }})" title="إرسال ملخص">
+                                                <i class="fas fa-paper-plane"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- نموذج GROW -->
+                            {% if meeting[6] or meeting[7] or meeting[8] or meeting[9] %}
+                            <div class="mt-3 pt-3 border-top">
+                                <h6>نموذج GROW:</h6>
+                                <div class="row">
+                                    {% if meeting[6] %}
+                                    <div class="col-md-3">
+                                        <strong>الهدف (Goal):</strong>
+                                        <p class="small">{{ meeting[6][:50] }}...</p>
+                                    </div>
+                                    {% endif %}
+                                    {% if meeting[7] %}
+                                    <div class="col-md-3">
+                                        <strong>الواقع (Reality):</strong>
+                                        <p class="small">{{ meeting[7][:50] }}...</p>
+                                    </div>
+                                    {% endif %}
+                                    {% if meeting[8] %}
+                                    <div class="col-md-3">
+                                        <strong>الخيارات (Options):</strong>
+                                        <p class="small">{{ meeting[8][:50] }}...</p>
+                                    </div>
+                                    {% endif %}
+                                    {% if meeting[9] %}
+                                    <div class="col-md-3">
+                                        <strong>الطريق للأمام (Way Forward):</strong>
+                                        <p class="small">{{ meeting[9][:50] }}...</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5>لا توجد اجتماعات</h5>
+                            <p class="text-muted">ابدأ بإضافة اجتماع جديد</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إضافة اجتماع -->
+<div class="modal fade" id="addMeetingModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة اجتماع جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addMeetingForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">عنوان الاجتماع</label>
+                                <input type="text" class="form-control" name="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">تاريخ ووقت الاجتماع</label>
+                                <input type="datetime-local" class="form-control" name="meeting_date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">المكان</label>
+                                <input type="text" class="form-control" name="location">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الحضور</label>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="attendeesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span id="selectedAttendeesText">اختر الحضور</span>
+                                    </button>
+                                    <ul class="dropdown-menu w-100" aria-labelledby="attendeesDropdown" style="max-height: 200px; overflow-y: auto;">
+                                        {% for user in users %}
+                                        <li>
+                                            <div class="form-check px-3 py-1">
+                                                <input class="form-check-input attendee-checkbox" type="checkbox" value="{{ user[0] }}" id="attendee{{ user[0] }}" onchange="updateSelectedAttendees()">
+                                                <label class="form-check-label" for="attendee{{ user[0] }}">
+                                                    {{ user[1] }}
+                                                </label>
+                                            </div>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <!-- Hidden input to store selected attendees -->
+                                <input type="hidden" name="attendees" id="attendeesInput">
+                                <small class="form-text text-muted">يمكنك اختيار عدة أشخاص من القائمة المنسدلة</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">وصف الاجتماع</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <!-- نموذج GROW -->
+                    <h6>نموذج GROW:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الهدف (Goal)</label>
+                                <textarea class="form-control" name="goal" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الواقع (Reality)</label>
+                                <textarea class="form-control" name="reality" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الخيارات (Options)</label>
+                                <textarea class="form-control" name="options" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">الطريق للأمام (Way Forward)</label>
+                                <textarea class="form-control" name="way_forward" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveMeeting()">حفظ الاجتماع</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateSelectedAttendees() {
+    const checkboxes = document.querySelectorAll('.attendee-checkbox:checked');
+    const selectedNames = Array.from(checkboxes).map(cb => cb.nextElementSibling.textContent.trim());
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    
+    const textSpan = document.getElementById('selectedAttendeesText');
+    const hiddenInput = document.getElementById('attendeesInput');
+    
+    if (selectedNames.length === 0) {
+        textSpan.textContent = 'اختر الحضور';
+        hiddenInput.value = '';
+    } else if (selectedNames.length === 1) {
+        textSpan.textContent = selectedNames[0];
+        hiddenInput.value = selectedIds.join(',');
+        // إشعار للمستخدم المختار
+        showAttendeeNotification(selectedNames[0] + ' تم اختياره لحضور الاجتماع');
+    } else {
+        textSpan.textContent = `تم اختيار ${selectedNames.length} أشخاص`;
+        hiddenInput.value = selectedIds.join(',');
+        // إشعار للمستخدمين المختارين
+        showAttendeeNotification(`تم اختيار ${selectedNames.length} أشخاص لحضور الاجتماع: ${selectedNames.join(', ')}`);
+    }
+}
+
+function showAttendeeNotification(message) {
+    // إنشاء إشعار منبثق
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+    notification.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // إزالة الإشعار تلقائياً بعد 5 ثوان
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+function sendMeetingSummary(meetingId) {
+    if (confirm('هل تريد إرسال ملخص الاجتماع للحضور؟')) {
+        fetch(`/api/meetings/${meetingId}/send-summary`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('تم إرسال ملخص الاجتماع بنجاح!');
+                location.reload();
+            } else {
+                alert('خطأ: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء إرسال الملخص');
+        });
+    }
+}
+
+function saveMeeting() {
+    const form = document.getElementById('addMeetingForm');
+    const formData = new FormData(form);
+    
+    // التأكد من إرسال الحضور المحددين
+    const attendeesInput = document.getElementById('attendeesInput');
+    if (attendeesInput && attendeesInput.value) {
+        formData.set('attendees', attendeesInput.value);
+    }
+    
+    fetch('/api/meetings', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('حدث خطأ: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال');
+    });
+}
+
+function viewMeeting(id) {
+    alert('عرض تفاصيل الاجتماع رقم: ' + id);
+}
+
+function editMeeting(id) {
+    console.log('Editing meeting:', id);
+    
+    fetch(`/api/meetings/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Meeting data received:', data);
+            
+            if (data.success) {
+                // إعادة تعيين النموذج أولاً
+                resetMeetingForm();
+                
+                // جلب عناصر النموذج
+                const titleInput = document.querySelector('#addMeetingModal input[name="title"]');
+                const descInput = document.querySelector('#addMeetingModal textarea[name="description"]');
+                const dateInput = document.querySelector('#addMeetingModal input[name="meeting_date"]');
+                const locationInput = document.querySelector('#addMeetingModal input[name="location"]');
+                const attendeesSelect = document.querySelector('#addMeetingModal select[name="attendees"]');
+                const goalInput = document.querySelector('#addMeetingModal textarea[name="goal"]');
+                const realityInput = document.querySelector('#addMeetingModal textarea[name="reality"]');
+                const optionsInput = document.querySelector('#addMeetingModal textarea[name="options"]');
+                const wayForwardInput = document.querySelector('#addMeetingModal textarea[name="way_forward"]');
+                
+                console.log('Form elements found:', {
+                    titleInput: !!titleInput,
+                    descInput: !!descInput,
+                    dateInput: !!dateInput,
+                    locationInput: !!locationInput,
+                    attendeesSelect: !!attendeesSelect,
+                    goalInput: !!goalInput,
+                    realityInput: !!realityInput,
+                    optionsInput: !!optionsInput,
+                    wayForwardInput: !!wayForwardInput
+                });
+                
+                if (titleInput) {
+                    titleInput.value = data.meeting.title || '';
+                    console.log('Title set to:', titleInput.value);
+                }
+                if (descInput) {
+                    descInput.value = data.meeting.description || '';
+                    console.log('Description set to:', descInput.value);
+                }
+                if (dateInput && data.meeting.meeting_date) {
+                    // تحويل التاريخ إلى تنسيق datetime-local
+                    const meetingDate = new Date(data.meeting.meeting_date);
+                    const formattedDate = meetingDate.toISOString().slice(0, 16);
+                    dateInput.value = formattedDate;
+                    console.log('Date set to:', dateInput.value);
+                }
+                if (locationInput) {
+                    locationInput.value = data.meeting.location || '';
+                    console.log('Location set to:', locationInput.value);
+                }
+                if (data.meeting.attendees) {
+                    // إلغاء تحديد جميع الخيارات أولاً
+                    document.querySelectorAll('.attendee-checkbox').forEach(checkbox => checkbox.checked = false);
+                    
+                    // تحديد الحضور في القائمة المنسدلة الجديدة
+                    let attendeeIds = [];
+                    if (typeof data.meeting.attendees === 'string') {
+                        // إذا كانت البيانات نص، نحاول تحليلها
+                        try {
+                            attendeeIds = JSON.parse(data.meeting.attendees);
+                        } catch (e) {
+                            // إذا فشل التحليل، نقسمها بالفاصلة
+                            attendeeIds = data.meeting.attendees.split(',').map(id => id.trim());
+                        }
+                    } else if (Array.isArray(data.meeting.attendees)) {
+                        attendeeIds = data.meeting.attendees;
+                    }
+                    
+                    attendeeIds.forEach(attendeeId => {
+                        const checkbox = document.querySelector(`#attendee${attendeeId}`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                    
+                    // تحديث النص المعروض
+                    updateSelectedAttendees();
+                    console.log('Attendees set to:', attendeeIds);
+                }
+                
+                // ملء حقول GROW
+                if (goalInput) {
+                    goalInput.value = data.meeting.goal || '';
+                    console.log('Goal set to:', goalInput.value);
+                }
+                if (realityInput) {
+                    realityInput.value = data.meeting.reality || '';
+                    console.log('Reality set to:', realityInput.value);
+                }
+                if (optionsInput) {
+                    optionsInput.value = data.meeting.options || '';
+                    console.log('Options set to:', optionsInput.value);
+                }
+                if (wayForwardInput) {
+                    wayForwardInput.value = data.meeting.way_forward || '';
+                    console.log('Way Forward set to:', wayForwardInput.value);
+                }
+                
+                // تغيير عنوان النموذج وزر الحفظ
+                document.querySelector('#addMeetingModal .modal-title').textContent = 'تعديل الاجتماع';
+                const saveBtn = document.querySelector('#addMeetingModal .btn-primary');
+                saveBtn.textContent = 'تحديث الاجتماع';
+                saveBtn.setAttribute('data-meeting-id', id);
+                saveBtn.onclick = () => updateMeeting(id);
+                
+                // إظهار النموذج
+                const modal = new bootstrap.Modal(document.getElementById('addMeetingModal'));
+                modal.show();
+            } else {
+                alert('حدث خطأ في جلب بيانات الاجتماع');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ في الاتصال');
+        });
+}
+
+function updateMeeting(meetingId) {
+    const form = document.getElementById('addMeetingForm');
+    const formData = new FormData(form);
+    
+    // معالجة الحضور المتعدد من القائمة المنسدلة الجديدة
+    const attendeesInput = document.getElementById('attendeesInput');
+    if (attendeesInput && attendeesInput.value) {
+        formData.set('attendees', attendeesInput.value);
+    }
+    
+    fetch(`/api/meetings/${meetingId}`, {
+        method: 'PUT',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // إخفاء النموذج
+            bootstrap.Modal.getInstance(document.getElementById('addMeetingModal')).hide();
+            // إعادة تعيين النموذج
+            resetMeetingForm();
+            // إعادة تحميل الصفحة
+            location.reload();
+        } else {
+            alert('حدث خطأ: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال');
+    });
+}
+
+function resetMeetingForm() {
+    // إعادة تعيين النموذج للوضع الأصلي
+    document.querySelector('#addMeetingModal .modal-title').textContent = 'إضافة اجتماع جديد';
+    const saveBtn = document.querySelector('#addMeetingModal .btn-primary');
+    saveBtn.textContent = 'حفظ الاجتماع';
+    saveBtn.removeAttribute('data-meeting-id');
+    saveBtn.onclick = () => saveMeeting();
+    document.getElementById('addMeetingForm').reset();
+    
+    // إعادة تعيين القائمة المنسدلة للحضور
+    document.querySelectorAll('.attendee-checkbox').forEach(checkbox => checkbox.checked = false);
+    document.getElementById('selectedAttendeesText').textContent = 'اختر الحضور';
+    document.getElementById('attendeesInput').value = '';
+}
+
+function deleteMeeting(id) {
+    if (confirm('هل أنت متأكد من حذف هذا الاجتماع؟')) {
+        fetch('/api/meetings/' + id, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('حدث خطأ: ' + data.message);
+            }
+        });
+    }
+}
+
+// إضافة event listeners لأزرار التعديل والحذف
+document.addEventListener('DOMContentLoaded', function() {
+    // إضافة event listener لزر إضافة اجتماع جديد
+    const addMeetingBtn = document.querySelector('button[data-bs-target="#addMeetingModal"]');
+    if (addMeetingBtn) {
+        addMeetingBtn.addEventListener('click', function() {
+            resetMeetingForm();
+        });
+    }
+    
+    // لا حاجة لevent listeners إضافية لأن onclick يعمل مباشرة
+    // ولكن سنضيف معالجة للأزرار التي لا تحتوي على onclick
+    document.querySelectorAll('button[aria-label="تعديل"]:not([onclick])').forEach((btn) => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // استخراج meeting ID من السياق
+            const meetingCard = this.closest('.meeting-card');
+            if (meetingCard) {
+                const meetingIdElement = meetingCard.querySelector('button[onclick*="editMeeting"]');
+                if (meetingIdElement) {
+                    const onclick = meetingIdElement.getAttribute('onclick');
+                    const meetingId = onclick.match(/\d+/)[0];
+                    editMeeting(parseInt(meetingId));
+                }
+            }
+        });
+    });
+    
+    document.querySelectorAll('button[aria-label="حذف"]:not([onclick])').forEach((btn) => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // استخراج meeting ID من السياق
+            const meetingCard = this.closest('.meeting-card');
+            if (meetingCard) {
+                const meetingIdElement = meetingCard.querySelector('button[onclick*="deleteMeeting"]');
+                if (meetingIdElement) {
+                    const onclick = meetingIdElement.getAttribute('onclick');
+                    const meetingId = onclick.match(/\d+/)[0];
+                    deleteMeeting(parseInt(meetingId));
+                }
+            }
+        });
+    });
+});
+
+// إعادة تعيين النموذج عند فتحه للإضافة
+document.getElementById('addMeetingModal').addEventListener('show.bs.modal', function(event) {
+    // التحقق من أن النموذج يُفتح للإضافة وليس للتعديل
+    if (!event.relatedTarget || !event.relatedTarget.getAttribute('data-meeting-id')) {
+        resetMeetingForm();
+    }
+});
+
+// إعادة تعيين النموذج عند إغلاقه
+document.getElementById('addMeetingModal').addEventListener('hidden.bs.modal', function(event) {
+    resetMeetingForm();
+});
+</script>
+{% endblock %}
+
