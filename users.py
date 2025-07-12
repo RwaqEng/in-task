@@ -5,7 +5,7 @@ from datetime import datetime
 import json
 
 # Import the User model from the main models file
-from rivaq_fixed.models import User
+from models import User
 
 users_bp = Blueprint('users', __name__)
 

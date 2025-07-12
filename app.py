@@ -40,7 +40,7 @@ def create_app():
     login_manager.login_message_category = 'info'
 
     # Import models after db initialization - تصحيح مسارات الاستيراد
-    from rivaq_fixed.models import User, Task, Meeting, MeetingOutput
+    from models import User, Task, Meeting, MeetingOutput
     
     # User loader for Flask-Login
     @login_manager.user_loader
