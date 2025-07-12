@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import os
 
 # تصحيح مسارات الاستيراد لتعمل مع بنية rivaq_fixed/
-from rivaq_fixed.blueprints.users import User  # تم تصحيح المسار
+from blueprints.users import User  # تم تصحيح المسار
 
 db = SQLAlchemy()
 migrate = Migrate()
