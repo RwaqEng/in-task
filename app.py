@@ -1,80 +1,48 @@
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_mail import Mail
-from flask_login import LoginManager
-from dotenv import load_dotenv
-import os
-
-# تصحيح مسارات الاستيراد لتعمل مع بنية rivaq_fixed/
-from blueprints.users import User  # تم تصحيح المسار
-
-db = SQLAlchemy()
-migrate = Migrate()
-mail = Mail()
-login_manager = LoginManager()
-
-load_dotenv()
+from flask_cors import CORS
+from extensions import db
+from models import User, Task, Meeting, MeetingOutput
+from users import users_bp
+from tasks import tasks_bp
+from dashboard import dashboard_bp
+from meetings import meetings_bp
+from api import api_bp
+from auth_routes import auth_bp  # ✅ التعديل هنا
 
 def create_app():
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", "sqlite:///rivaq.db")
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "rivaq-secret-key-2024-very-secure")
-    
-    # Mail configuration
-    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
-    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
-    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+    CORS(app)
 
     db.init_app(app)
-    migrate.init_app(app, db)
-    mail.init_app(app)
-    login_manager.init_app(app)
-    
-    # Configure login manager
-    login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'يرجى تسجيل الدخول للوصول إلى هذه الصفحة.'
-    login_manager.login_message_category = 'info'
+    Migrate(app, db)
 
-    # Import models after db initialization - تصحيح مسارات الاستيراد
-    from models import User, Task, Meeting, MeetingOutput
-    
-    # User loader for Flask-Login
-    @login_manager.user_loader
-    def load_user(user_id):
-        return User.query.get(int(user_id))
-
-    # Register blueprints - تصحيح مسارات الاستيراد
-    from auth import auth_bp
-    from api import api_bp
-    from dashboard import dashboard_bp
-    from users import users_bp
-    from tasks import tasks_bp
-    from meetings import meetings_bp
-
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(users_bp)
+    app.register_blueprint(tasks_bp)
     app.register_blueprint(dashboard_bp)
-    app.register_blueprint(users_bp, url_prefix='/users')
-    app.register_blueprint(tasks_bp, url_prefix='/tasks')
-    app.register_blueprint(meetings_bp, url_prefix='/meetings')
-    
-    # Create tables and initialize database
+    app.register_blueprint(meetings_bp)
+    app.register_blueprint(api_bp)
+    app.register_blueprint(auth_bp)  # ✅ تأكدنا من تسجيل البلوبرنت
+
     with app.app_context():
         db.create_all()
-        # Initialize database with sample data if empty
         if not User.query.first():
-            from init_db import init_database
-            init_database(app, db)
+            admin_user = User(
+                username='admin',
+                full_name='Admin User',
+                email='admin@example.com',
+                phone_number='1234567890',
+                role='admin'
+            )
+            db.session.add(admin_user)
+            db.session.commit()
 
     return app
 
-# إنشاء instance للتطبيق للاستخدام مع gunicorn
-app = create_app()
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
-
+if __name__ == '__main__':
+    app = create_app()
+    app.run(debug=True)
