@@ -48,12 +48,12 @@ def create_app():
         return User.query.get(int(user_id))
 
     # Register blueprints - تصحيح مسارات الاستيراد
-    from rivaq_fixed.auth import auth_bp
-    from rivaq_fixed.api import api_bp
-    from rivaq_fixed.dashboard import dashboard_bp
-    from rivaq_fixed.users import users_bp
-    from rivaq_fixed.tasks import tasks_bp
-    from rivaq_fixed.meetings import meetings_bp
+    from auth import auth_bp
+    from api import api_bp
+    from dashboard import dashboard_bp
+    from users import users_bp
+    from tasks import tasks_bp
+    from meetings import meetings_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
@@ -67,7 +67,7 @@ def create_app():
         db.create_all()
         # Initialize database with sample data if empty
         if not User.query.first():
-            from rivaq_fixed.init_db import init_database
+            from init_db import init_database
             init_database(app, db)
 
     return app
