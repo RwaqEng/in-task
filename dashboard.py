@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
-from rivaq_fixed.extensions import db
-from rivaq_fixed.models import User, Task, Meeting, MeetingOutput
+from extensions import db
+from models import User, Task, Meeting, MeetingOutput
 from datetime import datetime, timedelta
 
 dashboard_bp = Blueprint('dashboard', __name__)

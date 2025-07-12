@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from rivaq_fixed.extensions import db
-from rivaq_fixed.models import User, Meeting, MeetingOutput
+from extensions import db
+from models import User, Meeting, MeetingOutput
 from datetime import datetime
 
 meetings_bp = Blueprint('meetings', __name__)
