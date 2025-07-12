@@ -48,7 +48,7 @@ def create_app():
         return User.query.get(int(user_id))
 
     # Register blueprints - تصحيح مسارات الاستيراد
-    from auth import auth_bp
+    from auth_bp import auth_bp
     from api import api_bp
     from dashboard import dashboard_bp
     from users import users_bp

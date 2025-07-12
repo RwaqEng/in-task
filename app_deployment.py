@@ -20,7 +20,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", "sqlite:///rivaq.db")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "rivaq-secret-key-2024-very-secure")
-    
+
     # Mail configuration
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
     app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
@@ -32,46 +32,17 @@ def create_app():
     migrate.init_app(app, db)
     mail.init_app(app)
     login_manager.init_app(app)
-    
-    # Configure login manager
-    login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'يرجى تسجيل الدخول للوصول إلى هذه الصفحة.'
-    login_manager.login_message_category = 'info'
 
-    # Import models after db initialization
-    from rivaq_fixed.models import User, Task, Meeting, MeetingOutput
-    
-    # User loader for Flask-Login
-    @login_manager.user_loader
-    def load_user(user_id):
-        return User.query.get(int(user_id))
-
-    # Register blueprints
+    from blueprints.users import users_bp
     from auth import auth_bp
     from api import api_bp
-    from dashboard import dashboard_bp
-    from users import users_bp
-    from tasks import tasks_bp
-    from meetings import meetings_bp
 
+    app.register_blueprint(users_bp)
     app.register_blueprint(auth_bp)
-    app.register_blueprint(api_bp, url_prefix='/api')
-    app.register_blueprint(dashboard_bp)
-    app.register_blueprint(users_bp, url_prefix='/users')
-    app.register_blueprint(tasks_bp, url_prefix='/tasks')
-    app.register_blueprint(meetings_bp, url_prefix='/meetings')
-    
-    # Create tables and initialize database
+    app.register_blueprint(api_bp)
+
     with app.app_context():
-        db.create_all()
-        # Initialize database with sample data if empty
         if not User.query.first():
-            from init_db import init_database
-            init_database(app, db)
+            db.create_all()
 
     return app
-
-if __name__ == "__main__":
-    app = create_app()
-    app.run(host='0.0.0.0', port=5000, debug=True)
-

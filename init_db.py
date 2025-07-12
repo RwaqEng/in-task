@@ -7,7 +7,7 @@ def init_database(app, db):
     
     with app.app_context():
         # Import models
-        from rivaq_fixed.models import User, Task, Meeting, MeetingOutput
+        from models import User, Task, Meeting, MeetingOutput
         
         # Create all tables
         db.create_all()
@@ -246,7 +246,7 @@ def init_database(app, db):
 
 if __name__ == '__main__':
     from app import create_app
-    from rivaq_fixed.extensions import db
+    from extensions import db
     
     app = create_app()
     init_database(app, db)
