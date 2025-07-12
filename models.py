@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 # تصحيح مسار الاستيراد
-from rivaq_fixed.extensions import db
+from extensions import db
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
